@@ -1,0 +1,47 @@
+{
+  "type": "svm",
+  "v4v-firewall-rules": {
+    "0": "my-stubdom -> 0:4001",
+    "1": "my-stubdom -> 0:4002",
+    "2": "my-stubdom -> 0:5000",
+    "3": "my-stubdom -> 0:5001",
+    "4": "my-stubdom -> 0:5100"
+  },
+  "os": "windows",
+  "description": "Windows 7 with TPM",
+  "ui-selectable": "true",
+  "stubdom": "false",
+  "config": {
+    "notify": "dbus",
+    "hvm": "true",
+    "pae": "true",
+    "acpi": "true",
+    "apic": "true",
+    "viridian": "true",
+    "hap": "true",
+    "nx": "true",
+    "v4v": "true",
+    "sound": "ac97",
+    "memory": "2048",
+    "display": "none",
+    "boot": "cd",
+    "flask-label": "system_u:system_r:hvm_guest_t",
+    "disk": {
+      "0": {
+        "path": "\/storage\/isos\/xc-tools.iso",
+        "type": "file",
+        "mode": "r",
+        "device": "hdc",
+        "devtype": "cdrom"
+      }
+    },
+    "vcpus": "1",
+    "qemu-dm-path": "\/usr\/sbin\/svirt-interpose",
+    "extra-hvm": {
+      "0": "-tpmdev",
+      "1": "type=passthrough,path=/dev/tpm0,cancel-path=/sys/class/tpm/tpm0/cancel,id=tpm0",
+      "2": "-device",
+      "3": "tpm-tis,tpmdev=tpm0"
+    }
+  }
+}
