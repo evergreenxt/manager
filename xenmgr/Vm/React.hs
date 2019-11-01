@@ -159,7 +159,7 @@ measuresR xm_context = mkReact f where
   f (VmMeasurementFailure fpath expected actual)
     = do action <- liftRpc getMeasureFailAction
          let msg = printf "measuring of file %s FAILED. Expected checksum: %x actual %x. Performing %s" fpath expected actual (show action)
-         liftIO (warn msg >> writeFile "/dev/xvc0" (msg++"\n"))
+         liftIO (warn msg >> writeFile "/dev/hvc0" (msg++"\n"))
          runXM xm_context (executePmAction action)
   f _
     = return ()
@@ -208,7 +208,8 @@ powerlinkR xm get_shr =
                             liftIO (Xl.resumeFromSleep (vm_uuid vm))
                             return ()
       shutdown vm      = do reason <- runVm vm get_shr
-                            when ( reason /= Restarting ) $
+                            debug $ "Power Link: shutdown hook reason " ++ show reason
+                            when ( reason == Halt ) $
                               info "Power Link: shutdown" >> hostShutdown
 
 logStatesR = mkReact f where
@@ -266,7 +267,7 @@ vmEventProcessor monitor
       where
         err f = f `catchError` report where report ex = warn ("reactor exception: " ++ show ex)
 whenRunning xm = do
-    maybeUpdateV4VHosts
+    maybeUpdateArgoHosts
     uuid <- vmUuid
     usb <- uuidRpc getVmUsbEnabled
     when usb $ whenDomainID_ uuid $ \domid -> usbUp (fromIntegral domid)
@@ -305,7 +306,7 @@ whenShutdown xm reason = do
       Just domid -> do
         usbDown domid
         removeAlsa domid
-        cleanupV4VDevice domid
+        cleanupArgoDevice domid
         vkb_enabled <- getVmVkbd uuid
         when vkb_enabled $ liftRpc $ cleanupVkbd uuid domid
       _ -> return ()
@@ -313,9 +314,9 @@ whenShutdown xm reason = do
     uuidRpc $ manageFrontVifs False
     -- has to be done before /xenmgr/vms/domid in XS is removed 
     uuidRpc unapplyVmFirewallRules `catchError` \err -> do
-      warn $ "error while unapplying v4v firewall rules: " ++ show err
+      warn $ "error while unapplying argo firewall rules: " ++ show err
     uuidRpc exportVmSwitcherInfo
-    maybeUpdateV4VHosts
+    maybeUpdateArgoHosts
     -- sent cd lock state notifications
     liftRpc $ mapM_ notifyCdDeviceAssignmentChanged =<< liftIO getHostBSGDevices
     maybeCleanupSnapshots
@@ -360,9 +361,9 @@ maybeKeepVmAlive uuid =
        when keep_alive (startVm uuid)
        return keep_alive
 
--- Update /etc/hosts with v4v IPs for special domains, if setting says so
-maybeUpdateV4VHosts :: Vm ()
-maybeUpdateV4VHosts =
+-- Update /etc/hosts with argo IPs for special domains, if setting says so
+maybeUpdateArgoHosts :: Vm ()
+maybeUpdateArgoHosts =
     do uuid <- vmUuid
        typ <- liftRpc (getVmType uuid)
        update_by_type typ
@@ -372,7 +373,7 @@ maybeUpdateV4VHosts =
 
       mupdate tag = do
             uuid <- vmUuid
-            updating <- liftRpc appV4VHostsFile
+            updating <- liftRpc appArgoHostsFile
             name <- replace "\t" "-" . replace " " "-" <$> liftRpc (getVmName uuid)
             -- other processes are locking /etc/hosts, on vm startup, we have to hit proper time window
             when updating $ do

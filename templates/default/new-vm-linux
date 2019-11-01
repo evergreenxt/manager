@@ -1,6 +1,6 @@
 {
   "type": "svm",
-  "v4v-firewall-rules": {
+  "argo-firewall-rules": {
     "0": "my-stubdom -> 0:4001",
     "1": "my-stubdom -> 0:4002",
     "2": "my-stubdom -> 0:5000",
@@ -20,13 +20,13 @@
     "viridian": "false",
     "hap": "true",
     "nx": "true",
-    "v4v": "true",
+    "argo": "true",
     "sound": "ac97",
     "memory": "1024",
     "display": "none",
     "boot": "cd",
     "flask-label": "system_u:system_r:hvm_guest_t",
-    "hdtype": "ahci",
+    "hdtype": "ide",
     "disk": {
       "0": {
         "path": "\/storage\/isos\/xc-tools.iso",
